@@ -285,6 +285,9 @@ int read_options(const std::string &name, Options &options, bool suppress_printi
         options.add_str("PCM_CC_TYPE", "PTE", "PTE");
     }
 
+    /*- DDPCM boolean for ddpcm module -*/
+    options.add_bool("DDPCM", false);
+
     if (name == "PE" || options.read_globals()) {
         /*- MODULEDESCRIPTION Performs polarizable embedding model (PE) computations. -*/
 

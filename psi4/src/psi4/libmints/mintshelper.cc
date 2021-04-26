@@ -40,6 +40,7 @@
 #include "psi4/libmints/petitelist.h"
 #include "psi4/libmints/factory.h"
 #include "psi4/libmints/3coverlap.h"
+#include "psi4/libmints/potentialint.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/libmints/sointegral_onebody.h"
 #include "psi4/psi4-dec.h"
@@ -1748,6 +1749,27 @@ std::vector<SharedMatrix> MintsHelper::ao_nabla() {
     ints->compute(nabla);
 
     return nabla;
+}
+
+SharedVector MintsHelper::electrostatic_potential_value(SharedMatrix charge_coords, SharedMatrix D) {
+    auto potential_integrals_ = static_cast<PCMPotentialInt *>(integral_->pcm_potentialint());
+    potential_integrals_->set_charge_field(charge_coords);
+    PetiteList petite(basisset_, integral_, true);
+    auto my_aotoso_ = petite.aotoso();
+
+    SharedMatrix D_carts;
+    if (basisset_->has_puream()) {
+        D_carts = std::make_shared<Matrix>("D carts", basisset_->nao(), basisset_->nao());
+        D_carts->back_transform(D, my_aotoso_);
+    } else {
+        D_carts = D;
+    }
+
+    SharedVector potvalues = std::make_shared<Vector>("potential values", charge_coords->nrow());
+    ContractOverDensityFunctor contract_density_functor(potvalues->dim(0), potvalues->pointer(0), D_carts);
+    potential_integrals_->compute(contract_density_functor);
+
+    return potvalues;
 }
 
 std::shared_ptr<CdSalcList> MintsHelper::cdsalcs(int needed_irreps, bool project_out_translations,

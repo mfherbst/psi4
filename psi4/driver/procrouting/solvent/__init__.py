@@ -33,6 +33,9 @@ A helper folder for solvent models
 _have_pe = False
 try:
     from . import pol_embed
+
     _have_pe = True
 except ImportError:
     pass
+
+from . import ddx

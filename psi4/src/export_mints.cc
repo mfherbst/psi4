@@ -1006,6 +1006,9 @@ void export_mints(py::module& m) {
              "coordinates (needed for EFP and PE)")
         .def("electric_field_value", &MintsHelper::electric_field_value,
              "Electric field expectation value at given sites")
+        .def("electrostatic_potential_value", &MintsHelper::electrostatic_potential_value,
+             "Electrostatic potential values at given sites with associated charge, specified as an (n_sites, 4) matrix.",
+             "charge_coords"_a, "D"_a)
 
         // Two-electron AO
         .def("ao_eri", normal_eri_factory(&MintsHelper::ao_eri), "AO ERI integrals", "factory"_a = nullptr)

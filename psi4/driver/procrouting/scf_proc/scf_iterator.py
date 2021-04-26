@@ -303,6 +303,16 @@ def scf_iterate(self, e_conv=None, d_conv=None):
         self.set_variable("PCM POLARIZATION ENERGY", upcm)  # P::e PCM
         self.set_energies("PCM Polarization", upcm)
 
+        uddx = 0.0
+        if core.get_option('SCF', 'DDPCM'):
+            Dt = self.Da().clone()
+            Dt.add(self.Db())
+            uddx, Vddpcm = self.ddpcm_state.get_solvation_contributions(Dt)
+            SCFE += uddx
+            self.push_back_external_potential(Vddpcm)
+        self.set_variable("DDPCM ENERGY", uddx)  # P::e DDPCM
+        self.set_energies("DDPCM Energy", uddx)
+
         upe = 0.0
         if core.get_option('SCF', 'PE'):
             Dt = self.Da().clone()

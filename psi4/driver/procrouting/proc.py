@@ -1551,6 +1551,14 @@ def scf_helper(name, post_scf=True, **kwargs):
         pcm_print_level = core.get_option('SCF', "PRINT")
         scf_wfn.set_PCM(core.PCM(pcmsolver_parsed_fname, pcm_print_level, scf_wfn.basisset()))
 
+    # DDPCM preparation
+    if core.get_option('SCF', 'DDPCM'):
+        ddpcm_options = solvent.ddx.get_ddx_options()
+        scf_wfn.ddpcm_state = solvent.ddx.DdxInterface(
+            molecule=scf_molecule, options=ddpcm_options,
+            basisset=scf_wfn.basisset()
+        )
+
     # PE preparation
     if core.get_option('SCF', 'PE'):
         if not solvent._have_pe:
