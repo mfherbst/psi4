@@ -94,8 +94,6 @@ class MolecularGrid {
     std::vector<std::shared_ptr<RadialGrid> > radial_grids_;
     /// Spherical grids, per atom and radial point
     std::vector<std::vector<std::shared_ptr<SphericalGrid> > > spherical_grids_;
-    /// index_[fast_index] = slow_index
-    int* index_;
 
     /// Vector of blocks
     std::vector<std::shared_ptr<BlockOPoints> > blocks_;
@@ -153,8 +151,6 @@ class MolecularGrid {
     const std::vector<std::vector<std::shared_ptr<SphericalGrid> > >& spherical_grids() const {
         return spherical_grids_;
     }
-    /// index_[fast_index] = slow_index. You do not own this
-    int* index() const { return index_; }
 
     /// Number of grid points
     int npoints() const { return npoints_; }
