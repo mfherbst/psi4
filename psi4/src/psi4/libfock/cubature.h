@@ -85,6 +85,8 @@ class MolecularGrid {
     double* z_;
     /// Full weights
     double* w_;
+    /// Full map to atom indices
+    int* atom_;
 
     // ==> Clean Grid Specification <== //
 
@@ -169,6 +171,8 @@ class MolecularGrid {
     double* z() const { return z_; }
     /// The weights, normalized to 1 on R3. You do not own this
     double* w() const { return w_; }
+    /// The atom index corresponding to a grid point. You do not own this
+    int* atom() const { return atom_; }
 
     /// Pointer to basis extents
     std::shared_ptr<BasisExtents> extents() const { return extents_; }

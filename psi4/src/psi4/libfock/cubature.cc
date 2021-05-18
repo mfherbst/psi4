@@ -3923,6 +3923,7 @@ void MolecularGrid::buildGridFromOptions(MolecularGridOptions const &opt) {
     y_ = new double[npoints_];
     z_ = new double[npoints_];
     w_ = new double[npoints_];
+    atom_ = new int[npoints_];
 
     int grid_vector_index = 0;
     for (int i = 0; i < grid.size(); i++) {
@@ -3931,6 +3932,7 @@ void MolecularGrid::buildGridFromOptions(MolecularGridOptions const &opt) {
             y_[grid_vector_index] = grid[i][j].y;
             z_[grid_vector_index] = grid[i][j].z;
             w_[grid_vector_index] = grid[i][j].w;
+            atom_[grid_vector_index] = grid[i];
             ++grid_vector_index;
         }
     }
@@ -4003,6 +4005,7 @@ void MolecularGrid::buildGridFromOptions(MolecularGridOptions const &opt, const 
     y_ = new double[npoints_];
     z_ = new double[npoints_];
     w_ = new double[npoints_];
+    atom_ = new int[npoints_];
 
     int grid_vector_index = 0;
     for (int i = 0; i < grid.size(); i++) {
@@ -4011,6 +4014,7 @@ void MolecularGrid::buildGridFromOptions(MolecularGridOptions const &opt, const 
             y_[grid_vector_index] = grid[i][j].y;
             z_[grid_vector_index] = grid[i][j].z;
             w_[grid_vector_index] = grid[i][j].w;
+            atom_[grid_vector_index] = grid[i];
             ++grid_vector_index;
         }
     }
@@ -4403,6 +4407,7 @@ MolecularGrid::~MolecularGrid() {
         delete[] y_;
         delete[] z_;
         delete[] w_;
+        delete[] atom_;
     }
 }
 
@@ -4414,10 +4419,10 @@ void MolecularGrid::block(int max_points, int min_points, double max_radius) {
     std::shared_ptr<GridBlocker> blocker;
     if (options_.get_str("DFT_BLOCK_SCHEME") == "NAIVE") {
         blocker = std::shared_ptr<GridBlocker>(
-            new NaiveGridBlocker(npoints_, x_, y_, z_, w_, max_points, min_points, max_radius, extents_));
+            new NaiveGridBlocker(npoints_, x_, y_, z_, w_, atom_, max_points, min_points, max_radius, extents_));
     } else if (options_.get_str("DFT_BLOCK_SCHEME") == "OCTREE") {
         blocker = std::shared_ptr<GridBlocker>(
-            new OctreeGridBlocker(npoints_, x_, y_, z_, w_, max_points, min_points, max_radius, extents_));
+            new OctreeGridBlocker(npoints_, x_, y_, z_, w_, atom_, max_points, min_points, max_radius, extents_));
     }
 
     blocker->set_print(options_.get_int("PRINT"));
@@ -4430,11 +4435,13 @@ void MolecularGrid::block(int max_points, int min_points, double max_radius) {
     delete[] y_;
     delete[] z_;
     delete[] w_;
+    delete[] atom_;
 
     x_ = blocker->x();
     y_ = blocker->y();
     z_ = blocker->z();
     w_ = blocker->w();
+    atom_ = blocker->atom();
 
     npoints_ = blocker->npoints();
     max_points_ = blocker->max_points();
@@ -4472,6 +4479,7 @@ void MolecularGrid::remove_distant_points(double Rmax) {
             y_[offset] = y_[Q];
             z_[offset] = z_[Q];
             w_[offset] = w_[Q];
+            atom_[offset] = atom_[Q];
             offset++;
         }
     }
@@ -4533,7 +4541,7 @@ void MolecularGrid::print_details(std::string out, int /*print*/) const {
 }
 
 GridBlocker::GridBlocker(const int npoints_ref, double const *x_ref, double const *y_ref, double const *z_ref,
-                         double const *w_ref, const int max_points, const int min_points,
+                         double const *w_ref, int const *atom_ref, const int max_points, const int min_points,
                          const double max_radius, std::shared_ptr<BasisExtents> extents)
     : debug_(0),
       print_(1),
@@ -4542,15 +4550,16 @@ GridBlocker::GridBlocker(const int npoints_ref, double const *x_ref, double cons
       y_ref_(y_ref),
       z_ref_(z_ref),
       w_ref_(w_ref),
+      atom_ref_(atom_ref),
       tol_max_points_(max_points),
       tol_min_points_(min_points),
       tol_max_radius_(max_radius),
       extents_(extents) {}
 GridBlocker::~GridBlocker() {}
 NaiveGridBlocker::NaiveGridBlocker(const int npoints_ref, double const *x_ref, double const *y_ref, double const *z_ref,
-                                   double const *w_ref, const int max_points,
+                                   double const *w_ref, int const *atom_ref, const int max_points,
                                    const int min_points, const double max_radius, std::shared_ptr<BasisExtents> extents)
-    : GridBlocker(npoints_ref, x_ref, y_ref, z_ref, w_ref, max_points, min_points, max_radius, extents) {}
+    : GridBlocker(npoints_ref, x_ref, y_ref, z_ref, w_ref, atom_ref, max_points, min_points, max_radius, extents) {}
 NaiveGridBlocker::~NaiveGridBlocker() {}
 void NaiveGridBlocker::block() {
     npoints_ = npoints_ref_;
@@ -4562,11 +4571,13 @@ void NaiveGridBlocker::block() {
     y_ = new double[npoints_];
     z_ = new double[npoints_];
     w_ = new double[npoints_];
+    atom_ = new int[npoints_];
 
     ::memcpy((void *)x_, (void *)x_ref_, sizeof(double) * npoints_);
     ::memcpy((void *)y_, (void *)y_ref_, sizeof(double) * npoints_);
     ::memcpy((void *)z_, (void *)z_ref_, sizeof(double) * npoints_);
     ::memcpy((void *)w_, (void *)w_ref_, sizeof(double) * npoints_);
+    ::memcpy((void *)atom_, (void *)atom_ref_, sizeof(int) * npoints_);
 
     blocks_.clear();
     for (size_t Q = 0; Q < npoints_; Q += max_points_) {
@@ -4575,10 +4586,10 @@ void NaiveGridBlocker::block() {
     }
 }
 OctreeGridBlocker::OctreeGridBlocker(const int npoints_ref, double const *x_ref, double const *y_ref,
-                                     double const *z_ref, double const *w_ref,
+                                     double const *z_ref, double const *w_ref, int const *atom_ref,
                                      const int max_points, const int min_points, const double max_radius,
                                      std::shared_ptr<BasisExtents> extents)
-    : GridBlocker(npoints_ref, x_ref, y_ref, z_ref, w_ref, max_points, min_points, max_radius, extents) {}
+    : GridBlocker(npoints_ref, x_ref, y_ref, z_ref, w_ref, atom_ref, max_points, min_points, max_radius, extents) {}
 OctreeGridBlocker::~OctreeGridBlocker() {}
 void OctreeGridBlocker::block() {
     // K-PR Octree algorithm (Rob Parrish and Justin Turney)
@@ -4591,6 +4602,7 @@ void OctreeGridBlocker::block() {
     double const *y = y_ref_;
     double const *z = z_ref_;
     double const *w = w_ref_;
+    int const *atom = atom_ref_;
 
     std::vector<std::vector<int>> active_tree(1);
     std::vector<std::vector<int>> completed_tree(0);
@@ -4741,6 +4753,7 @@ void OctreeGridBlocker::block() {
     y_ = new double[npoints_];
     z_ = new double[npoints_];
     w_ = new double[npoints_];
+    atom_ = new int[npoints_];
 
     int index = 0;
     int unique_block = 0;
@@ -4757,6 +4770,7 @@ void OctreeGridBlocker::block() {
             y_[index] = y[delta];
             z_[index] = z[delta];
             w_[index] = w[delta];
+            atom_[index] = atom[delta]
             if (bench_)
                 printer->Printf("   %4d %15.6E %15.6E %15.6E %15.6E\n", unique_block, x_[index], y_[index], z_[index],
                                 w_[index]);

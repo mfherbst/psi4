@@ -54,7 +54,7 @@ class GridBlocker {
     double const* y_ref_;
     double const* z_ref_;
     double const* w_ref_;
-    int const* index_ref_;
+    int const* atom_ref_;
 
     const size_t tol_max_points_;
     const size_t tol_min_points_;
@@ -71,11 +71,12 @@ class GridBlocker {
     double* y_;
     double* z_;
     double* w_;
+    int* atom_;
     std::vector<std::shared_ptr<BlockOPoints> > blocks_;
 
    public:
     GridBlocker(const int npoints_ref, double const* x_ref, double const* y_ref, double const* z_ref,
-                double const* w_ref, const int max_points, const int min_points,
+                double const* w_ref, int const* atom_ref, const int max_points, const int min_points,
                 const double max_radius, std::shared_ptr<BasisExtents> extents);
     virtual ~GridBlocker();
 
@@ -89,6 +90,7 @@ class GridBlocker {
     double* y() const { return y_; }
     double* z() const { return z_; }
     double* w() const { return w_; }
+    int* atom() const { return atom_; }
     const std::vector<std::shared_ptr<BlockOPoints> >& blocks() const { return blocks_; }
 
     void set_print(int print) { print_ = print; }
@@ -102,7 +104,7 @@ class GridBlocker {
 class NaiveGridBlocker : public GridBlocker {
    public:
     NaiveGridBlocker(const int npoints_ref, double const* x_ref, double const* y_ref, double const* z_ref,
-                     double const* w_ref, const int max_points, const int min_points,
+                     double const* w_ref, int const* atom_ref, const int max_points, const int min_points,
                      const double max_radius, std::shared_ptr<BasisExtents> extents);
     ~NaiveGridBlocker() override;
 
@@ -115,7 +117,7 @@ class NaiveGridBlocker : public GridBlocker {
 class OctreeGridBlocker : public GridBlocker {
    public:
     OctreeGridBlocker(const int npoints_ref, double const* x_ref, double const* y_ref, double const* z_ref,
-                      double const* w_ref, const int max_points, const int min_points,
+                      double const* w_ref, int const* atom_ref, const int max_points, const int min_points,
                       const double max_radius, std::shared_ptr<BasisExtents> extents);
     ~OctreeGridBlocker() override;
 
